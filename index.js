@@ -4,7 +4,11 @@ import cors from "cors";
 
 import connectDB from "./mongodb/connect.js";
 import userRouter from "./routes/user.routes.js";
-import propertyRouter from "./routes/property.routes.js";
+import tourRouter from "./routes/tour.routes.js";
+import clientRouter from "./routes/client.routes.js";
+import guideRouter from "./routes/guide.routes.js";
+import agencyRouter from "./routes/agency.routes.js";
+import reservationRouter from "./routes/reservation.routes.js"; 
 
 dotenv.config();
 
@@ -17,7 +21,11 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/v1/users", userRouter);
-app.use("/api/v1/properties", propertyRouter);
+app.use("/api/v1/tours", tourRouter);
+app.use("/api/v1/clients", clientRouter);
+app.use("/api/v1/guides", guideRouter);
+app.use("/api/v1/agencies", agencyRouter);
+app.use("/api/v1", reservationRouter); 
 
 const startServer = async () => {
     try {

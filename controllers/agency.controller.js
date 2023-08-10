@@ -1,4 +1,4 @@
-import Property from "../mongodb/models/property.js";
+import Agency from "../mongodb/models/agency.js";
 import User from "../mongodb/models/user.js";
 
 import mongoose from "mongoose";
@@ -13,30 +13,30 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const getAllProperties = async (req, res) => {
+const getAllAgencies = async (req, res) => {
     const {
         _end,
         _order,
         _start,
         _sort,
-        title_like = "",
-        propertyType = "",
+        name_like = "",
+        identification = "",
     } = req.query;
 
     const query = {};
 
-    if (propertyType !== "") {
-        query.propertyType = propertyType;
+    if (identification !== "") {
+        query.identification = identification;
     }
 
-    if (title_like) {
-        query.title = { $regex: title_like, $options: "i" };
+    if (name_like) {
+        query.name = { $regex: name_like, $options: "i" };
     }
 
     try {
-        const count = await Property.countDocuments({ query });
+        const count = await Agency.countDocuments({ query });
 
-        const properties = await Property.find(query)
+        const agencies = await Agency.find(query)
             .limit(_end)
             .skip(_start)
             .sort({ [_sort]: _order });
@@ -44,35 +44,34 @@ const getAllProperties = async (req, res) => {
         res.header("x-total-count", count);
         res.header("Access-Control-Expose-Headers", "x-total-count");
 
-        res.status(200).json(properties);
+        res.status(200).json(agencies);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
 
-const getPropertyDetail = async (req, res) => {
+const getAgencyDetail = async (req, res) => {
     const { id } = req.params;
-    const propertyExists = await Property.findOne({ _id: id }).populate(
+    const agencyExists = await Agency.findOne({ _id: id }).populate(
         "creator",
     );
 
-    if (propertyExists) {
-        res.status(200).json(propertyExists);
+    if (agencyExists) {
+        res.status(200).json(agencyExists);
     } else {
-        res.status(404).json({ message: "Property not found" });
+        res.status(404).json({ message: "Agency not found" });
     }
 };
 
-const createProperty = async (req, res) => {
+const createAgency = async (req, res) => {
     try {
         const {
-            title,
-            description,
-            propertyType,
+            name,
+            contact,
             location,
-            price,
+            operation,
             photo,
-            email,
+            identification,
         } = req.body;
 
         const session = await mongoose.startSession();
@@ -84,82 +83,82 @@ const createProperty = async (req, res) => {
 
         const photoUrl = await cloudinary.uploader.upload(photo);
 
-        const newProperty = await Property.create({
-            title,
-            description,
-            propertyType,
+        const newAgency = await Agency.create({
+            name,
+            contact,
             location,
-            price,
+            operation,
             photo: photoUrl.url,
+            identification,
             creator: user._id,
         });
 
-        user.allProperties.push(newProperty._id);
+        user.allTours.push(newAgency._id);
         await user.save({ session });
 
         await session.commitTransaction();
 
-        res.status(200).json({ message: "Property created successfully" });
+        res.status(200).json({ message: "Agency created successfully" });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
 
-const updateProperty = async (req, res) => {
+const updateAgency = async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, description, propertyType, location, price, photo } =
+        const { name, contact, location, operation, photo, identification } =
             req.body;
 
         const photoUrl = await cloudinary.uploader.upload(photo);
 
-        await Property.findByIdAndUpdate(
+        await Agency.findByIdAndUpdate(
             { _id: id },
             {
-                title,
-                description,
-                propertyType,
+                name,
+                contact,
                 location,
-                price,
+                operation,
                 photo: photoUrl.url || photo,
+                identification,
             },
         );
 
-        res.status(200).json({ message: "Property updated successfully" });
+        res.status(200).json({ message: "Agency updated successfully" });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
 
-const deleteProperty = async (req, res) => {
+const deleteAgency = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const propertyToDelete = await Property.findById({ _id: id }).populate(
+        const agencyToDelete = await Agency.findById({ _id: id }).populate(
             "creator",
         );
 
-        if (!propertyToDelete) throw new Error("Property not found");
+        if (!agencyToDelete) throw new Error("Agency not found");
 
         const session = await mongoose.startSession();
         session.startTransaction();
 
-        propertyToDelete.remove({ session });
-        propertyToDelete.creator.allProperties.pull(propertyToDelete);
+        agencyToDelete.remove({ session });
+        agencyToDelete.creator.allTours.pull(agencyToDelete);
 
-        await propertyToDelete.creator.save({ session });
+        await agencyToDelete.creator.save({ session });
         await session.commitTransaction();
 
-        res.status(200).json({ message: "Property deleted successfully" });
+        res.status(200).json({ message: "Agency deleted successfully" });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
 
 export {
-    getAllProperties,
-    getPropertyDetail,
-    createProperty,
-    updateProperty,
-    deleteProperty,
+    getAllAgencies,
+    getAgencyDetail,
+    createAgency,
+    updateAgency,
+    deleteAgency,
 };
